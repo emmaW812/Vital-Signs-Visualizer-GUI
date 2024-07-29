@@ -19,11 +19,8 @@ import string
 import numpy as np
 import pandas as pd
 
-#make_interval_minmax_data() - not creating seclen bc doesnt recognize interval equalling any of the options, not sure why bc it is a str
-#with the new intervalling none of the data is created, charts graph nothing
-
-class NewWindow:
-    def __init__(self, master, mode, data, x_value, y_values, graph_type, coords):
+class BatchWindow:
+    def __init__(self, master, data, x_value, y_values, graph_type, coords):
         self.new_window = tk.Toplevel(master)
         self.new_window.title('Filters')
 
@@ -339,5 +336,5 @@ class NewWindow:
 if __name__ == "__main__":
     root = tk.Tk()
     data = pd.read_csv("Vital Signs Data.csv")
-    app = NewWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Trajectory map", coords=data['Location'].tolist())
+    app = BatchWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Trajectory map", coords=data['Location'].tolist())
     root.mainloop()

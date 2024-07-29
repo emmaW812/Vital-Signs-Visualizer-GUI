@@ -1,8 +1,8 @@
 import tkinter as tk
 import customtkinter
-from window1 import NewWindow
+from batch import BatchWindow
+from realtime import RealTimeWindow
 import pandas as pd
-#newwindow = filtering window
 
 class Choose:
     def __init__(self, master, data, x_value, y_values, graph_type, coords):
@@ -29,7 +29,10 @@ class Choose:
 
     def open_filter_window(self):
         mode = self.select_mode.get()
-        new_win = NewWindow(self.root, mode, self.data, self.x_value, self.y_values, self.graph_type, self.coords)
+        if mode == "Batch processing":
+            BatchWindow(self.root, self.data, self.x_value, self.y_values, self.graph_type, self.coords)
+        elif mode == "Real-time":
+            RealTimeWindow(self.root, self.data, self.x_value, self.y_values, self.graph_type)
         self.root.withdraw()
 
 

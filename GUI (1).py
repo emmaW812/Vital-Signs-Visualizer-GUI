@@ -27,7 +27,7 @@ def open_new_window():
     print("X Value:", x_value)
     print("Y Values:", y_values)
 
-    new_win = Choose(root, data, x_value, y_values, graph_type, coords)
+    Choose(root, data, x_value, y_values, graph_type, coords)
 
 def select_graph():
     select_graph_window = tk.Toplevel(root)
