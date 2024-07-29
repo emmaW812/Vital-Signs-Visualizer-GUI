@@ -23,7 +23,7 @@ import pandas as pd
 #with the new intervalling none of the data is created, charts graph nothing
 
 class NewWindow:
-    def __init__(self, master, data, x_value, y_values, graph_type, coords):
+    def __init__(self, master, mode, data, x_value, y_values, graph_type, coords):
         self.new_window = tk.Toplevel(master)
         self.new_window.title('Filters')
 
@@ -37,7 +37,7 @@ class NewWindow:
 
         self.times = self.data[self.x_value].tolist()
 
-        self.timelen = self.data.shape[1]
+        self.timelen = self.data.shape[0]
 
         self.all_coords = coords
 
@@ -61,7 +61,7 @@ class NewWindow:
         self.maxbutton.pack(pady=10, padx=10)
 
         # interval dropdown
-        self.select_interval = customtkinter.CTkOptionMenu(self.new_window, values=["Seconds ", "Minutes", "Hours", "Days","Weeks"], command=self.interval_selected)
+        self.select_interval = customtkinter.CTkOptionMenu(self.new_window, values=["Seconds", "Minutes", "Hours", "Days","Weeks"], command=self.interval_selected)
         self.select_interval.pack(pady=10, padx=10)
         self.select_interval.set("Select interval length")
 
@@ -79,7 +79,7 @@ class NewWindow:
         self.entry_box_min.insert(0, "Entry for min")
 
     def create_entry_box_max(self):
-        self.max = False
+        self.max = True
         self.entry_box_max = tk.Entry(self.new_window)
         self.entry_box_max.pack(pady=10, padx=10)
         self.entry_box_max.insert(0, "Entry for max")
@@ -92,7 +92,7 @@ class NewWindow:
             min_value = float(self.entry_box_min.get())
             max_value = None
         elif self.min == False and self.max == True:
-            max_value = float(self.entry_box_min.get())
+            max_value = float(self.entry_box_max.get())
             min_value = None
         else:
             #neither
@@ -124,8 +124,6 @@ class NewWindow:
         elif interval == "Weeks":
             sec_len = 604800
         
-        #sec_len = 1
-        
         master = int(self.timelen/sec_len)
 
         for i in range(master):
@@ -142,13 +140,6 @@ class NewWindow:
             if self.y2_exists:
                 y2_avg.append(np.average(y2_temp))
         
-        
-        def append_vals(self, time, y1, y2, coords):
-            self.timesr.append(times)
-            self.y1_avgr.append(y1)
-            self.y2_avgr.append(y2) if self.y2_exists else None
-            self.coordsr.append(coords)
-        
         #MIN MAX RANGE
         min_value, max_value = self.get_min_max_values()
 
@@ -162,31 +153,41 @@ class NewWindow:
         tsec = [t * sec_len for t in times]
 
         for i, s in enumerate(tsec):
-            if min_value is None and max_value is None:
-               self.append_vals(times[i],y1_avg[i],y2_avg[i],coords[i])
-            elif min_value is None:
-                if s < max_value: 
-                    self.append_vals(times[i],y1_avg[i],y2_avg[i],coords[i])
-            elif max_value is None:
-                if s > min_value: 
-                    self.append_vals(times[i],y1_avg[i],y2_avg[i],coords[i])
+            if self.min == False and self.max == False:
+                self.timesfiltered.append(times[i])
+                self.y1_avgfiltered.append(y1_avg[i])
+                self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
+                self.coordsfiltered.append(coords[i])
+            elif self.min == False:
+                if s <= max_value: 
+                    self.timesfiltered.append(times[i])
+                    self.y1_avgfiltered.append(y1_avg[i])
+                    self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
+                    self.coordsfiltered.append(coords[i])
+            elif self.max == False:
+                if s >= min_value: 
+                    self.timesfiltered.append(times[i])
+                    self.y1_avgfiltered.append(y1_avg[i])
+                    self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
+                    self.coordsfiltered.append(coords[i])
             else:
-                if min_value< s < max_value: 
-                    self.append_vals(times[i],y1_avg[i],y2_avg[i],coords[i])
+                if min_value <= s <= max_value: 
+                    self.timesfiltered.append(times[i])
+                    self.y1_avgfiltered.append(y1_avg[i])
+                    self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
+                    self.coordsfiltered.append(coords[i])
 
         return self.timesfiltered, self.y1_avgfiltered, self.y2_avgfiltered, self.coordsfiltered
     
 
     def create_line_graph(self, ax, times, y1, y2, y1label, y2label,interval):
-        print(times)
-        print(y1)
         # LINE GRAPH
         line1 = ax.plot(times, y1, label=y1label, color='orange', linewidth=2)
         if y2 is not None:
             line2 = ax.plot(times, y2, label=y2label, color='magenta', linewidth=2)
             ax.set_ylabel('Rates')
         else:
-            ax.set_ylabel(y1)
+            ax.set_ylabel(y1label)
         
         ax.set_xlabel(f'Time ({interval})')
 
@@ -194,7 +195,7 @@ class NewWindow:
         ax.set_title(name)
         
         #create cursor
-        if line2 is not None:
+        if y2 is not None:
             cursor = mplcursors.cursor(line1, hover=mplcursors.HoverMode.Transient)
             cursor = mplcursors.cursor(line2, hover=mplcursors.HoverMode.Transient)
         else:
@@ -226,7 +227,7 @@ class NewWindow:
             bars2 = ax.bar(indices + bar_width, y2, bar_width, label=y2label, color='magenta')
             ax.set_ylabel('Rates')
         else:
-            ax.set_ylabel(y1)
+            ax.set_ylabel(y1label)
         
         #set the location of the x ticks and labels
         ax.set_xticks(indices + bar_width / 2)
@@ -237,7 +238,7 @@ class NewWindow:
         ax.set_title(name)
         
         #create cursor and annotations
-        if bars2 is not None:
+        if y2 is not None:
             cursor = mplcursors.cursor([bars1, bars2], hover=mplcursors.HoverMode.Transient)
         else:
             cursor = mplcursors.cursor(bars1, hover=mplcursors.HoverMode.Transient)
@@ -251,10 +252,8 @@ class NewWindow:
 
         ax.legend()
     
-    def create_trajectory_map(self, ax, times, coords):
-        #1. replace example coords with real
-        #2. interactive function where you can hover over data points (coords, room)
-        #3. create options for intervalling
+    def create_trajectory_map(self, ax, times, y1, y2, y1label, y2label, coords):
+        print(f"Number of coordinates: {len(coords)}")
         img = mpimg.imread('first_floor.png')
 
         ax.imshow(img, extent=[0, img.shape[1], 0, img.shape[0]])
@@ -272,11 +271,23 @@ class NewWindow:
         
             x_coords.append(x)
             y_coords.append(y)
+        
+        if len(x_coords) == 0 or len(y_coords) == 0:
+            print("No valid coordinates to plot.")
+            return
 
         trajmap = ax.plot(x_coords, y_coords, color='orange', marker='.', linestyle='-', label='Trajectory')
 
         cursor = mplcursors.cursor(trajmap, hover=True)
+        @cursor.connect("add")
+        def on_add(sel):
+            index = int(sel.index)
+            if y2 is not None:
+                sel.annotation.set(text=f"{times[index]}: ({x_coords[index]:.2f},{y_coords[index]:.2f})\n{y1label}: {y1[index]}\n {y2label}: {y2[index]}",position=(0, 20), anncoords="offset points")
+            else:
+                sel.annotation.set(text=f"{times[index]}: ({x_coords[index]:.2f},{y_coords[index]:.2f})\n{y1label}: {y1[index]}",position=(0, 20), anncoords="offset points")
 
+        
         ax.legend()
 
     def create_graph(self):
@@ -299,7 +310,7 @@ class NewWindow:
         elif self.graph_type == "Bar graph":
             self.create_bar_graph(ax, times_avg, y1_avg, y2_avg, y1label, y2label, self.interval)
         elif self.graph_type == "Trajectory map":
-            self.create_trajectory_map(ax, times_avg, coords)
+            self.create_trajectory_map(ax, times_avg, y1_avg, y2_avg, y1label, y2label, coords)
 
         canvas = FigureCanvasTkAgg(fig, master=self.new_window)
         canvas.draw()
@@ -307,6 +318,7 @@ class NewWindow:
 
         if self.min:
             self.entry_box_min.destroy()
+        
         if self.max:
             self.entry_box_max.destroy()
     
@@ -327,5 +339,5 @@ class NewWindow:
 if __name__ == "__main__":
     root = tk.Tk()
     data = pd.read_csv("Vital Signs Data.csv")
-    app = NewWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Line graph", coords=data['Location'].tolist())
+    app = NewWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Trajectory map", coords=data['Location'].tolist())
     root.mainloop()
