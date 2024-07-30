@@ -31,8 +31,9 @@ for t in time_stamps:
 locations = []
 for i in range(time):
     templist = []
-    templist.append(random.randint(-100,100))
-    templist.append(random.randint(-100,100))
+    #dimensions of first_floor.png
+    templist.append(random.randint(0,1490))
+    templist.append(random.randint(0,754))
     locations.append(templist)
 
 

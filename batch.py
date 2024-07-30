@@ -121,7 +121,11 @@ class BatchWindow:
         elif interval == "Weeks":
             sec_len = 604800
         
+        if self.timelen % sec_len != 0:
+            self.timelen -= self.timelen % sec_len
+        
         master = int(self.timelen/sec_len)
+        #if self.timelen is not divisible by 60 - take out remainder
 
         for i in range(master):
             times.append(i+1)

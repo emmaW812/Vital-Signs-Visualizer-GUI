@@ -30,6 +30,13 @@ class RealTimeWindow:
         self.y_values = y_values
         self.graph_type = graph_type
         self.stop = False
+        self.real_time = 0
+
+        try:
+            placeholder = self.data[self.y_values[1]].tolist()
+            self.y2_exists = True
+        except:
+            self.y2_exists = False
 
         self.create_buttons()
 
@@ -163,7 +170,7 @@ class RealTimeWindow:
             y2_value = last_row[self.y_values[1]] if self.y2_exists else None
             current_coords = last_row['Location']
 
-            self.times.append(current_time)
+            self.times.append(self.real_time)
             self.y1.append(y1_value)
             if self.y2_exists:
                 self.y2.append(y2_value)
@@ -175,6 +182,9 @@ class RealTimeWindow:
             self.y2 = self.y2[-60:]
             self.coords = self.coords[-60:]
 
+            #increase self.real_time by seclen increments
+            self.real_time+=1
+
             self.update_graph()
 
     def setup_graph(self):
@@ -182,8 +192,9 @@ class RealTimeWindow:
         self.select_interval.destroy()
         self.createbutton.destroy()
         #create figure plot and subplot
-        fig = Figure(figsize=(10, 6), dpi=100)
-        self.ax = fig.add_subplot(111)
+        self.fig = Figure(figsize=(10, 6), dpi=100)
+        self.ax = self.fig.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.new_window)
 
         self.y1label = self.y_values[0]
         self.y2label = self.y_values[1] if self.y2_exists else None
@@ -198,7 +209,7 @@ class RealTimeWindow:
         
         self.times, self.y1, self.y2, self.coords = [], [], [], []
         #run update data - will run every interval/seclen secs and then will run update graph
-        self.update_thread = threading.Thread(target=self.update_data, args=(self.sec_len))
+        self.update_thread = threading.Thread(target=self.update_data, args=(self.sec_len,))
 
         self.update_thread.start()
         
@@ -214,12 +225,12 @@ class RealTimeWindow:
         elif self.graph_type == "Trajectory map":
             self.create_trajectory_map(self.ax, self.times, self.y1, self.y2, self.y1label, self.y2label, self.coords) 
            
-        canvas = FigureCanvasTkAgg(fig, master=self.new_window)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     
     def stop_update(self):
         self.stop = True
+        self.update_thread.join()
     
     def name_graph(self,y1label,y2label):
         title = ""
@@ -238,5 +249,5 @@ class RealTimeWindow:
 if __name__ == "__main__":
     root = tk.Tk()
     data = pd.read_csv("Vital Signs Data.csv")
-    app = RealTimeWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Trajectory map")
+    app = RealTimeWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Line graph")
     root.mainloop()
