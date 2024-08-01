@@ -29,9 +29,22 @@ def open_new_window():
 
     Choose(root, data, x_value, y_values, graph_type, coords)
 
-def select_graph():
-    select_graph_window = tk.Toplevel(root)
-    select_graph_window.title("Select graph type")
+def create_tooltip(widget, text):
+    tooltip = tk.Toplevel(widget)
+    tooltip.withdraw()
+    tooltip.overrideredirect(True)
+    tooltip_label = tk.Label(tooltip, text=text, background="yellow", relief=tk.SOLID, borderwidth=1, padx=2, pady=2)
+    tooltip_label.pack()
+
+    def show_tooltip(event):
+        tooltip.geometry(f"+{event.x_root+20}+{event.y_root+10}")
+        tooltip.deiconify()
+
+    def hide_tooltip(event):
+        tooltip.withdraw()
+
+    widget.bind("<Enter>", show_tooltip)
+    widget.bind("<Leave>", hide_tooltip)
 
 #main application window
 root = tk.Tk()
@@ -56,14 +69,13 @@ y_entries = [y_entry]
 add_button = ttk.Button(frame, text="Add column data (y)", command=add_column_y2)
 add_button.grid(row=2, column=0, padx=5, pady=5)
 
-select_graphs = customtkinter.CTkOptionMenu(frame, values=["Bar graph", "Line graph", "Trajectory map"])
+select_graphs = customtkinter.CTkOptionMenu(frame, values=["Bar graph", "Line graph", "Trajectory map","Probability Histogram"])
 select_graphs.grid(row=3,column=0,padx=5, pady=5)
 select_graphs.set("Select graph type")
 
+create_tooltip(select_graphs, "Bar graph, Line graph, and Trajectory map can be viewed in real-time.\nProbability Histogram cannot.\nFor Trajectory map, if y1 and y2 are defined, rates at the recorded location point will be displayed when hovered over.")
+
 next_button = ttk.Button(frame, text="Next", command=open_new_window)
 next_button.grid(row=4, column=1, padx=5, pady=5)
-
-y_count = 1
-
 
 root.mainloop()

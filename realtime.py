@@ -46,6 +46,11 @@ class RealTimeWindow:
         self.select_interval.pack(pady=10, padx=10)
         self.select_interval.set("Select interval length")
 
+        # duration
+        ttk.Label(text="Duration (seconds)").grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
+        duration_entry = ttk.Entry(width=20)
+        duration_entry.grid(row=1, column=1, padx=5, pady=5)
+
         self.createbutton = tk.Button(self.new_window, text="Create", command=self.setup_graph)
         self.createbutton.pack(pady=10, padx=10)
     
@@ -165,9 +170,9 @@ class RealTimeWindow:
         while not self.stop:
             time.sleep(sec_len)
             last_row = self.data.iloc[-1]
-            current_time = last_row[self.x_value]
-            y1_value = last_row[self.y_values[0]]
-            y2_value = last_row[self.y_values[1]] if self.y2_exists else None
+
+            y1_value = last_row[self.y_values[self.y1label]]
+            y2_value = last_row[self.y_values[self.y2label]] if self.y2_exists else None
             current_coords = last_row['Location']
 
             self.times.append(self.real_time)
@@ -179,18 +184,22 @@ class RealTimeWindow:
             #limit to only 60 points
             self.times = self.times[-60:]
             self.y1 = self.y1[-60:]
-            self.y2 = self.y2[-60:]
+            if self.y2_exists:
+                self.y2 = self.y2[-60:]
             self.coords = self.coords[-60:]
 
             #increase self.real_time by seclen increments
             self.real_time+=1
 
             self.update_graph()
+        else:
+            return
 
     def setup_graph(self):
-        #first delete top buttons
+        #first delete top buttons and rename
         self.select_interval.destroy()
         self.createbutton.destroy()
+        self.new_window.title('Real-Time ' + str(self.graph_type))
         #create figure plot and subplot
         self.fig = Figure(figsize=(10, 6), dpi=100)
         self.ax = self.fig.add_subplot(111)
@@ -203,16 +212,17 @@ class RealTimeWindow:
             "Seconds": 1,
             "Minutes": 60,
             "Hours": 3600,
-            "Days": 86400,
-            "Weeks": 604800
         }[self.interval]
         
         self.times, self.y1, self.y2, self.coords = [], [], [], []
+        duration = int(self.duration_entry.get())
         #run update data - will run every interval/seclen secs and then will run update graph
         self.update_thread = threading.Thread(target=self.update_data, args=(self.sec_len,))
-
         self.update_thread.start()
-        
+
+        time.sleep(duration)
+        self.stop = True
+
         stop_button = tk.Button(self.new_window, text="Stop", command=self.stop_update)
         stop_button.pack(side=tk.BOTTOM)
     
@@ -223,7 +233,7 @@ class RealTimeWindow:
         elif self.graph_type == "Bar graph":
             self.create_bar_graph(self.ax, self.times, self.y1, self.y2, self.y1label, self.y2label)
         elif self.graph_type == "Trajectory map":
-            self.create_trajectory_map(self.ax, self.times, self.y1, self.y2, self.y1label, self.y2label, self.coords) 
+            self.create_trajectory_map(self.ax, self.times, self.y1, self.y2, self.y1label, self.y2label, self.coords)
            
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
