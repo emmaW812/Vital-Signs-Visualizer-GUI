@@ -58,13 +58,32 @@ class BatchWindow:
         self.maxbutton.pack(pady=10, padx=10)
 
         # interval dropdown
-        self.select_interval = customtkinter.CTkOptionMenu(self.new_window, values=["Seconds", "Minutes", "Hours", "Days","Weeks"], command=self.interval_selected)
+        self.select_interval = customtkinter.CTkOptionMenu(self.new_window, values=["Seconds", "Minutes", "Hours", "Days","Weeks","Months","Years"], command=self.interval_selected)
         self.select_interval.pack(pady=10, padx=10)
         self.select_interval.set("Select interval length")
+
+        self.create_tooltip(self.select_interval, "Value will be the average rate throughout the interval duration.\nException: Trajectory map takes the coordinate at the start of each interval.")
 
         # be able to create and view two graphs at once? + connect to real time
         self.createbutton = tk.Button(self.new_window, text="Create", command=self.create_graph)
         self.createbutton.pack(pady=10, padx=10)
+    
+    def create_tooltip(self, widget, text):
+        tooltip = tk.Toplevel(widget)
+        tooltip.withdraw()
+        tooltip.overrideredirect(True)
+        tooltip_label = tk.Label(tooltip, text=text, background="yellow", relief=tk.SOLID, borderwidth=1, padx=2, pady=2)
+        tooltip_label.pack()
+
+        def show_tooltip(event):
+            tooltip.geometry(f"+{event.x_root+20}+{event.y_root+10}")
+            tooltip.deiconify()
+
+        def hide_tooltip(event):
+            tooltip.withdraw()
+
+        widget.bind("<Enter>", show_tooltip)
+        widget.bind("<Leave>", hide_tooltip)
     
     def interval_selected(self, selected_value):
         self.interval = selected_value
@@ -110,16 +129,22 @@ class BatchWindow:
 
         #var for length of seconds of the interval chosen
 
-        if interval == "Seconds":
-            sec_len = 1
-        elif interval == "Minutes":
-            sec_len = 60
-        elif interval == "Hours":
-            sec_len = 3600
-        elif interval == "Days":
-            sec_len = 86400
-        elif interval == "Weeks":
-            sec_len = 604800
+        match interval:
+            case "Seconds":
+                sec_len = 1
+            case "Minutes":
+                sec_len = 60
+            case "Hours":
+                sec_len = 3600
+            case "Days":
+                sec_len == 86400
+            case "Weeks":
+                sec_len = 604800
+            case "Months":
+                sec_len = 2419200
+            case "Years":
+                sec_len = 29030400
+
         
         if self.timelen % sec_len != 0:
             self.timelen -= self.timelen % sec_len
