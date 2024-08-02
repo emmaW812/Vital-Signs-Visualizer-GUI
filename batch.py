@@ -101,19 +101,20 @@ class BatchWindow:
         self.entry_box_max.insert(0, "Entry for max")
     
     def get_min_max_values(self):
+        #if not specified set min to self.times[0] and max to self.times[-1]
         if self.min and self.max:
             min_value = float(self.entry_box_min.get())
             max_value = float(self.entry_box_max.get())
         elif self.min == True and self.max == False:
             min_value = float(self.entry_box_min.get())
-            max_value = None
+            max_value = self.times[-1]
         elif self.min == False and self.max == True:
             max_value = float(self.entry_box_max.get())
-            min_value = None
+            min_value = self.times[0]
         else:
             #neither
-            min_value = None
-            max_value = None
+            min_value = self.times[0]
+            max_value = self.times[-1]
         return min_value, max_value
 
 
@@ -144,7 +145,10 @@ class BatchWindow:
                 sec_len = 2419200
             case "Years":
                 sec_len = 29030400
-
+        
+        #convert self.min and self.max to interval
+        self.intmin = self.min/sec_len
+        self.intmax = self.max/sec_len
         
         if self.timelen % sec_len != 0:
             self.timelen -= self.timelen % sec_len
@@ -167,7 +171,7 @@ class BatchWindow:
                 y2_avg.append(np.average(y2_temp))
         
         #MIN MAX RANGE
-        min_value, max_value = self.get_min_max_values()
+        self.min_value, self.max_value = self.get_min_max_values()
 
         #new lists to store new values
         self.timesfiltered = []
@@ -185,19 +189,19 @@ class BatchWindow:
                 self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
                 self.coordsfiltered.append(coords[i])
             elif self.min == False:
-                if s <= max_value: 
+                if s <= self.max_value: 
                     self.timesfiltered.append(times[i])
                     self.y1_avgfiltered.append(y1_avg[i])
                     self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
                     self.coordsfiltered.append(coords[i])
             elif self.max == False:
-                if s >= min_value: 
+                if s >= self.min_value: 
                     self.timesfiltered.append(times[i])
                     self.y1_avgfiltered.append(y1_avg[i])
                     self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
                     self.coordsfiltered.append(coords[i])
             else:
-                if min_value <= s <= max_value: 
+                if self.min_value <= s <= self.max_value: 
                     self.timesfiltered.append(times[i])
                     self.y1_avgfiltered.append(y1_avg[i])
                     self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
@@ -206,19 +210,19 @@ class BatchWindow:
         return self.timesfiltered, self.y1_avgfiltered, self.y2_avgfiltered, self.coordsfiltered
     
 
-    def create_line_graph(self, ax, times, y1, y2, y1label, y2label,interval):
+    def create_line_graph(self, times, y1, y2, y1label, y2label,interval):
         # LINE GRAPH
-        line1 = ax.plot(times, y1, label=y1label, color='orange', linewidth=2)
+        line1 = self.ax.plot(times, y1, label=y1label, color='orange', linewidth=2)
         if y2 is not None:
-            line2 = ax.plot(times, y2, label=y2label, color='magenta', linewidth=2)
-            ax.set_ylabel('Rates')
+            line2 = self.ax.plot(times, y2, label=y2label, color='magenta', linewidth=2)
+            self.ax.set_ylabel('Rates')
         else:
-            ax.set_ylabel(y1label)
+            self.ax.set_ylabel(y1label)
         
-        ax.set_xlabel(f'Time ({interval})')
+        self.ax.set_xlabel(f'Time ({interval})')
 
         name = self.name_graph(interval,y1label,y2label)
-        ax.set_title(name)
+        self.ax.set_title(name)
         
         #create cursor
         if y2 is not None:
@@ -241,27 +245,27 @@ class BatchWindow:
             sel.annotation.xy = (x, y)
 
         # Add legend
-        ax.legend()
+        self.ax.legend()
 
-    def create_bar_graph(self, ax, times, y1, y2, y1label, y2label,interval):
+    def create_bar_graph(self, times, y1, y2, y1label, y2label,interval):
         bar_width = 0.4
         indices = np.arange(len(times))
 
         # Adjust positions to avoid overlap
-        bars1 = ax.bar(indices, y1, bar_width, label=y1label, color='orange')
+        bars1 = self.ax.bar(indices, y1, bar_width, label=y1label, color='orange')
         if y2 is not None:
-            bars2 = ax.bar(indices + bar_width, y2, bar_width, label=y2label, color='magenta')
-            ax.set_ylabel('Rates')
+            bars2 = self.ax.bar(indices + bar_width, y2, bar_width, label=y2label, color='magenta')
+            self.ax.set_ylabel('Rates')
         else:
-            ax.set_ylabel(y1label)
+            self.ax.set_ylabel(y1label)
         
         #set the location of the x ticks and labels
-        ax.set_xticks(indices + bar_width / 2)
-        ax.set_xticklabels(times, rotation=45)
-        ax.set_xlabel(f'Time ({interval})')
+        self.ax.set_xticks(indices + bar_width / 2)
+        self.ax.set_xticklabels(times, rotation=45)
+        self.ax.set_xlabel(f'Time ({interval})')
         
         name = self.name_graph(interval,y1label,y2label)
-        ax.set_title(name)
+        self.ax.set_title(name)
         
         #create cursor and annotations
         if y2 is not None:
@@ -276,15 +280,15 @@ class BatchWindow:
             sel.annotation.set(text=f"{times[sel.index]}: {height:.2f}",position=(0, 20), anncoords="offset points")
             sel.annotation.xy = (bar.get_x() + bar.get_width() / 2, height)
 
-        ax.legend()
+        self.ax.legend()
     
-    def create_trajectory_map(self, ax, times, y1, y2, y1label, y2label, coords):
+    def create_trajectory_map(self, times, y1, y2, y1label, y2label, coords):
         print(f"Number of coordinates: {len(coords)}")
         img = mpimg.imread('first_floor.png')
 
-        ax.imshow(img, extent=[0, img.shape[1], 0, img.shape[0]])
+        self.ax.imshow(img, extent=[0, img.shape[1], 0, img.shape[0]])
 
-        disconnect_zoom = zoom_factory(ax)
+        disconnect_zoom = zoom_factory(self.ax)
 
         x_coords = []
         y_coords = []
@@ -302,7 +306,7 @@ class BatchWindow:
             print("No valid coordinates to plot.")
             return
 
-        trajmap = ax.plot(x_coords, y_coords, color='orange', marker='.', linestyle='-', label='Trajectory')
+        trajmap = self.ax.plot(x_coords, y_coords, color='orange', marker='.', linestyle='-', label='Trajectory')
 
         cursor = mplcursors.cursor(trajmap, hover=True)
         @cursor.connect("add")
@@ -314,7 +318,55 @@ class BatchWindow:
                 sel.annotation.set(text=f"{times[index]}: ({x_coords[index]:.2f},{y_coords[index]:.2f})\n{y1label}: {y1[index]}",position=(0, 20), anncoords="offset points")
 
         
-        ax.legend()
+        self.ax.legend()
+    
+    def create_probability_histogram(self, times, y1, y2, y1label, y2label, interval):
+        labels_y1 = {"40-60", "60-80", "80-100", "100-120", "120-140", "140-160", "160-180", "180-200"}
+        labels_y2 = {"40-60", "60-80", "80-100", "100-120", "120-140", "140-160", "160-180", "180-200"}
+        total_occurences = len(times)
+        for i, time in enumerate(times):
+            #split label to get max or min
+            for key, value in labels_y1:
+                min, max = int(key.split(''))
+                if min <= y1[i] <= max:
+                    value+=1
+                if self.y2_exists:
+                    if min <= y2[i] <=max:
+                        #append to labels_y2 key
+                        labels_y2[key]+=1
+        prob_y1 = []
+        if self.y2_exists:
+            prob_y2 = [] 
+
+        y1freq = labels_y1.values().tolist()
+        if self.y2_exists:
+            y2freq = labels_y2.values().tolist() 
+
+        for i, f in enumerate(y1freq):
+            prob1 = y1freq[i]/total_occurences
+            prob_y1.append(prob1)
+            if self.y2_exists:
+                prob2 = y2freq[i]/total_occurences
+                prob_y2.append(prob2)
+        
+        labels = labels_y1.keys().tolist()
+
+        self.create_bar_graph(self, labels, prob_y1, prob_y2, y1label, y2label,interval)
+
+        #relabelling custom
+        self.ax.set_ylabel("Probability mass")
+        if self.y2_exists:
+            self.ax.set_xlabel(f"Bin ranges ({y1label} and {y2label}, BPMs)")
+        else:
+            self.ax.set_xlabel(f"Bin range ({y1label}, BPM)")
+        
+        interval = interval.replace('s','')
+        
+        if self.y2_exists:
+            self.ax.set_title(f"Distribution of Average {y1label} and {y2label} per {interval} Over a {self.intmin}-{self.intmax} {interval} Interval")
+        else:
+            self.ax.set_title(f"Distribution of Average {y1label} per {interval} Over a {self.intmin}-{self.intmax} {interval} Interval")
+            
 
     def create_graph(self):
         #first delete top buttons
@@ -324,7 +376,7 @@ class BatchWindow:
         self.createbutton.destroy()
         #create figure plot and subplot
         fig = Figure(figsize=(10, 6), dpi=100)
-        ax = fig.add_subplot(111)
+        self.ax = fig.add_subplot(111)
 
         y1label = self.y_values[0]
         y2label = self.y_values[1] if self.y2_exists else None
@@ -332,11 +384,14 @@ class BatchWindow:
         times_avg, y1_avg, y2_avg, coords = self.make_interval_minmax_data(self.interval)
 
         if self.graph_type == "Line graph":
-            self.create_line_graph(ax, times_avg, y1_avg, y2_avg, y1label, y2label, self.interval)
+            self.create_line_graph(times_avg, y1_avg, y2_avg, y1label, y2label, self.interval)
         elif self.graph_type == "Bar graph":
-            self.create_bar_graph(ax, times_avg, y1_avg, y2_avg, y1label, y2label, self.interval)
+            self.create_bar_graph(times_avg, y1_avg, y2_avg, y1label, y2label, self.interval)
         elif self.graph_type == "Trajectory map":
-            self.create_trajectory_map(ax, times_avg, y1_avg, y2_avg, y1label, y2label, coords)
+            self.create_trajectory_map(times_avg, y1_avg, y2_avg, y1label, y2label, coords)
+        elif self.graph_type == "Probability histogram":
+            #interval - will represent prob of  avg of interval durations being within each range from min - max range of time
+            self.create_probability_histogram(times_avg, y1_avg, y2_avg, y1label, y2label, coords)
 
         canvas = FigureCanvasTkAgg(fig, master=self.new_window)
         canvas.draw()
@@ -350,9 +405,10 @@ class BatchWindow:
     
     def name_graph(self,interval,y1label,y2label):
         title = ""
+        #self.intmin, intmax
         if y2label is not None:
             if interval == "Seconds":
-                title = y1label + " and " + y2label + " per " + interval.replace('s','')
+                title = y1label + " and " + y2label + " per " + interval.replace('s','') + " Over a " + str(self.intmin) + "-" + str(self.intmax) + interval.replace('s','') + "Interval"
             else:
                 title = "Average " + y1label + " and " + y2label + " per " + interval.replace('s','')
         else:
