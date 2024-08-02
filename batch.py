@@ -86,7 +86,7 @@ class BatchWindow:
         widget.bind("<Leave>", hide_tooltip)
     
     def interval_selected(self, selected_value):
-        self.interval = selected_value
+        self.interval = str(selected_value)
 
     def create_entry_box_min(self):
         self.min = True
@@ -113,8 +113,9 @@ class BatchWindow:
             min_value = self.times[0]
         else:
             #neither
-            min_value = self.times[0]
-            max_value = self.times[-1]
+            min_value = self.times[0] + 1
+            max_value = self.times[-1] + 1
+        print(f"{min_value}, {max_value}")
         return min_value, max_value
 
 
@@ -124,9 +125,6 @@ class BatchWindow:
         y1_avg = []
         y2_avg = [] if self.y2_exists else None
         coords = []
-
-        print(interval)
-        print(type(interval))
 
         #var for length of seconds of the interval chosen
 
@@ -146,9 +144,12 @@ class BatchWindow:
             case "Years":
                 sec_len = 29030400
         
+        #MIN MAX RANGE
+        self.min_value, self.max_value = self.get_min_max_values()
+        
         #convert self.min and self.max to interval
-        self.intmin = self.min/sec_len
-        self.intmax = self.max/sec_len
+        self.intmin = round(self.min_value / sec_len, 2)
+        self.intmax = round(self.max_value / sec_len, 2)
         
         if self.timelen % sec_len != 0:
             self.timelen -= self.timelen % sec_len
@@ -169,9 +170,6 @@ class BatchWindow:
             y1_avg.append(np.average(y1_temp))
             if self.y2_exists:
                 y2_avg.append(np.average(y2_temp))
-        
-        #MIN MAX RANGE
-        self.min_value, self.max_value = self.get_min_max_values()
 
         #new lists to store new values
         self.timesfiltered = []
@@ -321,37 +319,35 @@ class BatchWindow:
         self.ax.legend()
     
     def create_probability_histogram(self, times, y1, y2, y1label, y2label, interval):
-        labels_y1 = {"40-60", "60-80", "80-100", "100-120", "120-140", "140-160", "160-180", "180-200"}
-        labels_y2 = {"40-60", "60-80", "80-100", "100-120", "120-140", "140-160", "160-180", "180-200"}
-        total_occurences = len(times)
+        labels_y1 = {
+        "10-20": 0,"20-40": 0,"40-60": 0, "60-80": 0, "80-100": 0, "100-120": 0, 
+        "120-140": 0, "140-160": 0, "160-180": 0, "180-200": 0
+        }
+        labels_y2 = {
+            "10-20": 0,"20-40": 0,"40-60": 0, "60-80": 0, "80-100": 0, "100-120": 0, 
+            "120-140": 0, "140-160": 0, "160-180": 0, "180-200": 0
+        }
+
+        total_occurrences = len(times)
+
         for i, time in enumerate(times):
             #split label to get max or min
-            for key, value in labels_y1:
-                min, max = int(key.split(''))
-                if min <= y1[i] <= max:
-                    value+=1
+            for key in labels_y1:
+                min_val, max_val = map(int, key.split('-'))
+                if min_val <= y1[i] <= max_val:
+                    labels_y1[key]+=1
                 if self.y2_exists:
-                    if min <= y2[i] <=max:
+                    if min_val <= y2[i] <=max_val:
                         #append to labels_y2 key
                         labels_y2[key]+=1
-        prob_y1 = []
-        if self.y2_exists:
-            prob_y2 = [] 
 
-        y1freq = labels_y1.values().tolist()
+        prob_y1 = [round(count * 100 / total_occurrences, 2) for count in labels_y1.values()]
         if self.y2_exists:
-            y2freq = labels_y2.values().tolist() 
-
-        for i, f in enumerate(y1freq):
-            prob1 = y1freq[i]/total_occurences
-            prob_y1.append(prob1)
-            if self.y2_exists:
-                prob2 = y2freq[i]/total_occurences
-                prob_y2.append(prob2)
+            prob_y2 = [round(count * 100 / total_occurrences, 2) for count in labels_y2.values()]
         
-        labels = labels_y1.keys().tolist()
+        labels = list(labels_y1.keys())
 
-        self.create_bar_graph(self, labels, prob_y1, prob_y2, y1label, y2label,interval)
+        self.create_bar_graph(labels, prob_y1, prob_y2, y1label, y2label,interval)
 
         #relabelling custom
         self.ax.set_ylabel("Probability mass")
@@ -391,8 +387,7 @@ class BatchWindow:
             self.create_trajectory_map(times_avg, y1_avg, y2_avg, y1label, y2label, coords)
         elif self.graph_type == "Probability histogram":
             #interval - will represent prob of  avg of interval durations being within each range from min - max range of time
-            self.create_probability_histogram(times_avg, y1_avg, y2_avg, y1label, y2label, coords)
-
+            self.create_probability_histogram(times_avg, y1_avg, y2_avg, y1label, y2label, self.interval)
         canvas = FigureCanvasTkAgg(fig, master=self.new_window)
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -410,6 +405,8 @@ class BatchWindow:
             if interval == "Seconds":
                 title = y1label + " and " + y2label + " per " + interval.replace('s','') + " Over a " + str(self.intmin) + "-" + str(self.intmax) + interval.replace('s','') + "Interval"
             else:
+                print(interval)
+                print(type(interval))
                 title = "Average " + y1label + " and " + y2label + " per " + interval.replace('s','')
         else:
             if interval == "Seconds":
@@ -421,5 +418,5 @@ class BatchWindow:
 if __name__ == "__main__":
     root = tk.Tk()
     data = pd.read_csv("Vital Signs Data.csv")
-    app = BatchWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Trajectory map", coords=data['Location'].tolist())
+    app = BatchWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Probability histogram", coords=data['Location'].tolist())
     root.mainloop()
