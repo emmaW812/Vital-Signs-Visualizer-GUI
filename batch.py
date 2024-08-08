@@ -48,7 +48,6 @@ class BatchWindow:
             self.y2_exists = False
             self.y2 = None
 
-        self.scaling = tk.BooleanVar()
         self.sliding = tk.BooleanVar()
         
         self.create_buttons()
@@ -68,14 +67,9 @@ class BatchWindow:
 
         self.create_tooltip(self.select_interval, "Value will be the average rate throughout the interval duration.\nException: Trajectory map takes the coordinate at the start of each interval.")
         
-        # enable x-axis scaling view window by adjusting size button and/or enable x-axis sliding to view earlier/later values button
-        self.viewopt_label = Label(self.new_window, text="Select interactive view options")
-        self.viewopt_label .pack(pady=5, padx=10)
+        # enable x-axis sliding to view earlier/later values button
 
-        self.scaling_checkbutton = Checkbutton(self.new_window, text="Enable x-axis scaling in size of view window", variable=self.scaling, onvalue=True, offvalue=False)
-        self.scaling_checkbutton.pack(pady=5, padx=10)
-
-        self.sliding_checkbutton = Checkbutton(self.new_window, text="Enable x-axis sliding of view window", variable=self.sliding, onvalue=True, offvalue=False)
+        self.sliding_checkbutton = Checkbutton(self.new_window, text="Enable adjustment of x-axis range", variable=self.sliding, onvalue=True, offvalue=False)
         self.sliding_checkbutton.pack(pady=5, padx=10)
 
         # create button
@@ -382,9 +376,7 @@ class BatchWindow:
         self.maxbutton.destroy()
         self.select_interval.destroy()
         self.createbutton.destroy()
-        #delete interactive view options
-        self.viewopt_label.destroy()
-        self.scaling_checkbutton.destroy()
+        #delete interactive view option
         self.sliding_checkbutton.destroy()
 
         #create figure plot and subplot
@@ -418,39 +410,23 @@ class BatchWindow:
         if self.max:
             self.entry_box_max.destroy()
 
-
-        #0-length of half x bc you decrease 1 on each side for each +1 on slider
-        self.scale_widget = Scale(self.new_window, from_=1, to=len(f_times)/2, orient=HORIZONTAL, label="Scale X-Axis View Window", command=lambda value: self.scale_graph(value, f_times))
+        #creating slider widgets
 
         d = f_times[0]-int_times[0]
         print("pre-d: " + str(d))
-        self.slide_widget1 = Scale(self.new_window, from_=int_times[0], to=f_times[0], sliderlength=min(100 * abs(d), 50),orient=HORIZONTAL, length=300, label="Reposition X-Axis", command=lambda value: self.slide_grap1(value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords))
+        self.slide_widget1 = Scale(self.new_window, from_=f_times[0], to=int_times[0], sliderlength=min(100 * abs(d), 50),orient=HORIZONTAL, length=300, label="Expand X-Axis Left", command=lambda value: self.slide_graph1(value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords))
 
         d = int_times[-1]-f_times[-1]
         print("post-d:" + str(d))
-        self.slide_widget2 = Scale(self.new_window, from_=f_times[-1], to=int_times[-1], sliderlength=min(100 * abs(d), 50), orient=HORIZONTAL, length=300, label="Reposition X-Axis", command=lambda value: self.slide_graph2(value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords))
-        
-        if self.scaling.get():
-            self.scale_widget.pack()  
-        else:
-            self.scale_widget.pack_forget()
-        
+        self.slide_widget2 = Scale(self.new_window, from_=f_times[-1], to=int_times[-1], sliderlength=min(100 * abs(d), 50), orient=HORIZONTAL, length=300, label="Expand X-Axis Right", command=lambda value: self.slide_graph2(value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords))
+
         if self.sliding.get():
-            self.slide_widget1.pack()
-            self.slide_widget2.pack()
+            self.slide_widget1.pack(side=tk.LEFT)
+            self.slide_widget2.pack(side=tk.RIGHT)
         else:
             self.slide_widget1.pack_forget()
-            self.slide_widget2.pack()
+            self.slide_widget2.pack_forget()
 
-
-    def scale_graph(self, value, f_times):
-        scale_value = value
-        #add scale_value each side 5-10 -> 6-11
-        print("in progress, maybe delete bc very similar function to slide_graph")
-        #take 
-        '''self.ax.set_xlim(f_times, len(f_times)-scale_value)
-        self.canvas.draw()
-'''
     def slide_graph1(self, value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords):
         slide_value1 = int(value)
 
@@ -462,7 +438,6 @@ class BatchWindow:
 
         #where the filtered graph starts and ends in indexes within the full range of data
         startg = int_times.index(f_times[0])
-        endg = int_times.index(f_times[-1])
 
         #where the new indexes start and end
         start_idx = max(0, startg - slide_value1)
@@ -488,9 +463,9 @@ class BatchWindow:
             case "Line graph":
                 self.create_line_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
             case "Bar graph":
-                self.create_bar_graph(sf_times, sf_y1, f_y2, y1label, y2label, self.interval)
+                self.create_bar_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
             case "Trajectory map":
-                self.create_trajectory_map(sf_times, f_y1, f_y2, y1label, y2label, sf_coords)
+                self.create_trajectory_map(sf_times, sf_y1, sf_y2, y1label, y2label, sf_coords)
             case "Probability histogram":
                 self.create_probability_histogram(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
         self.canvas.draw()
@@ -506,7 +481,6 @@ class BatchWindow:
             sf_y2 = [] 
         sf_coords = []
         #where the filtered graph starts and ends in indexes within the full range of data
-        startg = int_times.index(f_times[0])
         endg = int_times.index(f_times[-1])
         end_idx = min(len(int_times), endg + slide_value2 + 1)  # +1 for inclusive end
 
@@ -530,9 +504,9 @@ class BatchWindow:
             case "Line graph":
                 self.create_line_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
             case "Bar graph":
-                self.create_bar_graph(sf_times, sf_y1, f_y2, y1label, y2label, self.interval)
+                self.create_bar_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
             case "Trajectory map":
-                self.create_trajectory_map(sf_times, f_y1, f_y2, y1label, y2label, sf_coords)
+                self.create_trajectory_map(sf_times, sf_y1, sf_y2, y1label, y2label, sf_coords)
             case "Probability histogram":
                 self.create_probability_histogram(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
         self.canvas.draw()
@@ -555,5 +529,5 @@ class BatchWindow:
 if __name__ == "__main__":
     root = tk.Tk()
     data = pd.read_csv("Vital Signs Data.csv")
-    app = BatchWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Line graph", coords=data['Location'].tolist())
+    app = BatchWindow(master=root, data=data, x_value='Time', y_values=['Heart Rate','Respiration Rate'], graph_type="Bar graph", coords=data['Location'].tolist())
     root.mainloop()
