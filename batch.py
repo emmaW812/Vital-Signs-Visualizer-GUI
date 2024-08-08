@@ -69,9 +69,14 @@ class BatchWindow:
         self.create_tooltip(self.select_interval, "Value will be the average rate throughout the interval duration.\nException: Trajectory map takes the coordinate at the start of each interval.")
         
         # enable x-axis scaling view window by adjusting size button and/or enable x-axis sliding to view earlier/later values button
-        Label(self.new_window,text="Select interactive view options").pack(padx=10,pady=10)
-        Checkbutton(self.new_window,text="Enable x-axis scaling in size of view window", variable=self.scaling, onvalue=True, offvalue=False).pack()
-        Checkbutton(self.new_window,text="Enable x-axis sliding of view window", variable=self.sliding, onvalue=True, offvalue=False).pack()
+        self.viewopt_label = Label(self.new_window, text="Select interactive view options")
+        self.viewopt_label .pack(pady=5, padx=10)
+
+        self.scaling_checkbutton = Checkbutton(self.new_window, text="Enable x-axis scaling in size of view window", variable=self.scaling, onvalue=True, offvalue=False)
+        self.scaling_checkbutton.pack(pady=5, padx=10)
+
+        self.sliding_checkbutton = Checkbutton(self.new_window, text="Enable x-axis sliding of view window", variable=self.sliding, onvalue=True, offvalue=False)
+        self.sliding_checkbutton.pack(pady=5, padx=10)
 
         # create button
         self.createbutton = tk.Button(self.new_window, text="Create", command=self.create_graph)
@@ -128,94 +133,94 @@ class BatchWindow:
         return min_value, max_value
 
 
-def make_interval_minmax_data(self, interval):
-    j_count = 0
-    times = []
-    y1_avg = []
-    y2_avg = [] if self.y2_exists else None
-    coords = []
+    def make_interval_minmax_data(self, interval):
+        j_count = 0
+        times = []
+        y1_avg = []
+        y2_avg = [] if self.y2_exists else None
+        coords = []
 
-    #var for length of seconds of the interval chosen
+        #var for length of seconds of the interval chosen
 
-    match interval:
-        case "Seconds":
-            sec_len = 1
-        case "Minutes":
-               sec_len = 60
-        case "Hours":
-            sec_len = 3600
-        case "Days":
-            sec_len == 86400
-        case "Weeks":
-            sec_len = 604800
-        case "Months":
-            sec_len = 2419200
-        case "Years":
-            sec_len = 29030400
-    
-    #MIN MAX RANGE
-    self.min_value, self.max_value = self.get_min_max_values()
-    
-    #convert self.min and self.max to interval
-    self.intmin = round(self.min_value / sec_len, 1)
-    self.intmax = round(self.max_value / sec_len, 1)
-    
-    if self.timelen % sec_len != 0:
-        self.timelen -= self.timelen % sec_len
-    
-    master = int(self.timelen/sec_len)
-    #if self.timelen is not divisible by 60 - take out remainder
+        match interval:
+            case "Seconds":
+                sec_len = 1
+            case "Minutes":
+                sec_len = 60
+            case "Hours":
+                sec_len = 3600
+            case "Days":
+                sec_len == 86400
+            case "Weeks":
+                sec_len = 604800
+            case "Months":
+                sec_len = 2419200
+            case "Years":
+                sec_len = 29030400
+        
+        #MIN MAX RANGE
+        self.min_value, self.max_value = self.get_min_max_values()
+        
+        #convert self.min and self.max to interval
+        self.intmin = round(self.min_value / sec_len, 1)
+        self.intmax = round(self.max_value / sec_len, 1)
+        
+        if self.timelen % sec_len != 0:
+            self.timelen -= self.timelen % sec_len
+        
+        master = int(self.timelen/sec_len)
+        #if self.timelen is not divisible by 60 - take out remainder
 
-    for i in range(master):
-        times.append(i+1)
-        coords.append(self.all_coords[i])
-        y1_temp = []
-        y2_temp = [] if self.y2_exists else None
-        for j in range(sec_len):
-            y1_temp.append(self.y1[j + j_count * sec_len])
+        for i in range(master):
+            times.append(i+1)
+            coords.append(self.all_coords[i])
+            y1_temp = []
+            y2_temp = [] if self.y2_exists else None
+            for j in range(sec_len):
+                y1_temp.append(self.y1[j + j_count * sec_len])
+                if self.y2_exists:
+                    y2_temp.append(self.y2[j + j_count * sec_len])
+            j_count += 1
+            y1_avg.append(np.average(y1_temp))
             if self.y2_exists:
-                y2_temp.append(self.y2[j + j_count * sec_len])
-        j_count += 1
-        y1_avg.append(np.average(y1_temp))
-        if self.y2_exists:
-            y2_avg.append(np.average(y2_temp))
+                y2_avg.append(np.average(y2_temp))
 
-    #new lists to store new values
-    self.timesfiltered = []
-    self.y1_avgfiltered = []
-    self.y2_avgfiltered = [] if self.y2_exists else None
-    self.coordsfiltered = []
+        #new lists to store new values
+        self.timesfiltered = []
+        self.y1_avgfiltered = []
+        self.y2_avgfiltered = [] if self.y2_exists else None
+        self.coordsfiltered = []
 
-    #convert to seconds
-    tsec = [t * sec_len for t in times]
+        #convert to seconds
+        tsec = [t * sec_len for t in times]
 
-    for i, s in enumerate(tsec):
-        if self.min == False and self.max == False:
-            self.timesfiltered.append(times[i])
-            self.y1_avgfiltered.append(y1_avg[i])
-            self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
-            self.coordsfiltered.append(coords[i])
-        elif self.min == False:
-            if s <= self.max_value: 
+        for i, s in enumerate(tsec):
+            if self.min == False and self.max == False:
                 self.timesfiltered.append(times[i])
                 self.y1_avgfiltered.append(y1_avg[i])
                 self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
                 self.coordsfiltered.append(coords[i])
-        elif self.max == False:
-            if s >= self.min_value: 
-                self.timesfiltered.append(times[i])
-                self.y1_avgfiltered.append(y1_avg[i])
-                self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
-                self.coordsfiltered.append(coords[i])
-        else:
-            if self.min_value <= s <= self.max_value: 
-                self.timesfiltered.append(times[i])
-                self.y1_avgfiltered.append(y1_avg[i])
-                self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
-                self.coordsfiltered.append(coords[i])
-    #return unfiltered too for scaling
-    return self.timesfiltered, self.y1_avgfiltered, self.y2_avgfiltered, self.coordsfiltered,times, y1_avg, y2_avg, coords
-    
+            elif self.min == False:
+                if s <= self.max_value: 
+                    self.timesfiltered.append(times[i])
+                    self.y1_avgfiltered.append(y1_avg[i])
+                    self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
+                    self.coordsfiltered.append(coords[i])
+            elif self.max == False:
+                if s >= self.min_value: 
+                    self.timesfiltered.append(times[i])
+                    self.y1_avgfiltered.append(y1_avg[i])
+                    self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
+                    self.coordsfiltered.append(coords[i])
+            else:
+                if self.min_value <= s <= self.max_value: 
+                    self.timesfiltered.append(times[i])
+                    self.y1_avgfiltered.append(y1_avg[i])
+                    self.y2_avgfiltered.append(y2_avg[i]) if self.y2_exists else None
+                    self.coordsfiltered.append(coords[i])
+        #return unfiltered too for scaling
+        return self.timesfiltered, self.y1_avgfiltered, self.y2_avgfiltered, self.coordsfiltered,times, y1_avg, y2_avg, coords
+        
 
     def create_line_graph(self, times, y1, y2, y1label, y2label,interval):
         # LINE GRAPH
@@ -237,7 +242,6 @@ def make_interval_minmax_data(self, interval):
             cursor = mplcursors.cursor(line2, hover=mplcursors.HoverMode.Transient)
         else:
             cursor = mplcursors.cursor(line1, hover=mplcursors.HoverMode.Transient)
-        print("Cursor created")
 
         @cursor.connect("add")
         def on_add(sel):
@@ -279,7 +283,6 @@ def make_interval_minmax_data(self, interval):
             cursor = mplcursors.cursor([bars1, bars2], hover=mplcursors.HoverMode.Transient)
         else:
             cursor = mplcursors.cursor(bars1, hover=mplcursors.HoverMode.Transient)
-        print("Cursor created")
         @cursor.connect("add")
         def on_add(sel):
             bar = sel.artist[sel.index]
@@ -288,7 +291,7 @@ def make_interval_minmax_data(self, interval):
             sel.annotation.xy = (bar.get_x() + bar.get_width() / 2, height)
 
         self.ax.legend()
-    
+
     def create_trajectory_map(self, times, y1, y2, y1label, y2label, coords):
         print(f"Number of coordinates: {len(coords)}")
         img = mpimg.imread('first_floor.png')
@@ -326,7 +329,7 @@ def make_interval_minmax_data(self, interval):
 
         
         self.ax.legend()
-    
+
     def create_probability_histogram(self, times, y1, y2, y1label, y2label, interval):
         labels_y1 = {
         "10-20": 0,"20-40": 0,"40-60": 0, "60-80": 0, "80-100": 0, "100-120": 0, 
@@ -379,6 +382,11 @@ def make_interval_minmax_data(self, interval):
         self.maxbutton.destroy()
         self.select_interval.destroy()
         self.createbutton.destroy()
+        #delete interactive view options
+        self.viewopt_label.destroy()
+        self.scaling_checkbutton.destroy()
+        self.sliding_checkbutton.destroy()
+
         #create figure plot and subplot
         fig = Figure(figsize=(10, 6), dpi=100)
         self.ax = fig.add_subplot(111)
@@ -410,17 +418,22 @@ def make_interval_minmax_data(self, interval):
         if self.max:
             self.entry_box_max.destroy()
 
+
         #0-length of half x bc you decrease 1 on each side for each +1 on slider
-        self.scale_widget = Scale(self.new_window, from_=1, to=len(f_times)/2, orient=HORIZONTAL, label="Scale X-Axis View Window", command=self.scale_graph(f_times))
+        self.scale_widget = Scale(self.new_window, from_=1, to=len(f_times)/2, orient=HORIZONTAL, label="Scale X-Axis View Window", command=lambda value: self.scale_graph(value, f_times))
 
-        self.slide_widget1 = Scale(self.new_window, from_=int_times[0],to=f_times[0], orient=HORIZONTAL, label="Reposition X-Axis", command=self.slide_graph(f_times, f_y1, f_y2, y1label, y2label, int_times, int_y1, int_y2, int_coords))
+        d = f_times[0]-int_times[0]
+        print("pre-d: " + str(d))
+        self.slide_widget1 = Scale(self.new_window, from_=int_times[0], to=f_times[0], sliderlength=min(100 * abs(d), 50),orient=HORIZONTAL, length=300, label="Reposition X-Axis", command=lambda value: self.slide_grap1(value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords))
 
-        self.slide_widget2 = Scale(self.new_window, from_=f_times[-1],to=int_times[-1], orient=HORIZONTAL, label="Reposition X-Axis", command=self.slide_graph(f_times, f_y1, f_y2, y1label, y2label, int_times, int_y1, int_y2, int_coords))
+        d = int_times[-1]-f_times[-1]
+        print("post-d:" + str(d))
+        self.slide_widget2 = Scale(self.new_window, from_=f_times[-1], to=int_times[-1], sliderlength=min(100 * abs(d), 50), orient=HORIZONTAL, length=300, label="Reposition X-Axis", command=lambda value: self.slide_graph2(value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords))
         
         if self.scaling.get():
             self.scale_widget.pack()  
         else:
-            self.scale_widget.pack_forget()  
+            self.scale_widget.pack_forget()
         
         if self.sliding.get():
             self.slide_widget1.pack()
@@ -428,16 +441,62 @@ def make_interval_minmax_data(self, interval):
         else:
             self.slide_widget1.pack_forget()
             self.slide_widget2.pack()
-    
-    
-    def scale_graph(self, f_times):
-        scale_value = self.scale_widget.get()
-        self.ax.set_xlim(f_times, len(f_times)-scale_value)
+
+
+    def scale_graph(self, value, f_times):
+        scale_value = value
+        #add scale_value each side 5-10 -> 6-11
+        print("in progress, maybe delete bc very similar function to slide_graph")
+        #take 
+        '''self.ax.set_xlim(f_times, len(f_times)-scale_value)
         self.canvas.draw()
-    
-    def slide_graph(self, f_times, f_y1, f_y2, y1label, y2label, int_times, int_y1, int_y2, int_coords):
-        slide_value1 = self.slide_widget1.get()
-        slide_value2 = self.slide_widget2.get()
+'''
+    def slide_graph1(self, value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords):
+        slide_value1 = int(value)
+
+        sf_times = []
+        sf_y1 = []
+        if self.y2_exists:
+            sf_y2 = [] 
+        sf_coords = []
+
+        #where the filtered graph starts and ends in indexes within the full range of data
+        startg = int_times.index(f_times[0])
+        endg = int_times.index(f_times[-1])
+
+        #where the new indexes start and end
+        start_idx = max(0, startg - slide_value1)
+        
+        #append data before the filtered range
+        sf_times.extend(int_times[start_idx:startg])
+        sf_y1.extend(int_y1[start_idx:startg])
+        if self.y2_exists:
+            sf_y2.extend(int_y2[start_idx:startg])
+        sf_coords.extend(int_coords[start_idx:startg])
+
+        # append filtered data
+        sf_times.extend(f_times)
+        sf_y1.extend(f_y1)
+        if self.y2_exists:
+            sf_y2.extend(f_y2)
+        sf_coords.extend(f_coords)
+
+        #regraph
+        self.ax.clear()
+
+        match self.graph_type:
+            case "Line graph":
+                self.create_line_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+            case "Bar graph":
+                self.create_bar_graph(sf_times, sf_y1, f_y2, y1label, y2label, self.interval)
+            case "Trajectory map":
+                self.create_trajectory_map(sf_times, f_y1, f_y2, y1label, y2label, sf_coords)
+            case "Probability histogram":
+                self.create_probability_histogram(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+        self.canvas.draw()
+
+    def slide_graph2(self, value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords):
+        slide_value2 = int(value)
         #add the indices of n1 hours before f_times to f_times, then add the andices of n2 hours after and replot
         #0|------------------| start time w1   {displayed graph} end |-----| w2 end data
         #ex 0-5 graph 5-10 10-24 hours
@@ -446,22 +505,26 @@ def make_interval_minmax_data(self, interval):
         if self.y2_exists:
             sf_y2 = [] 
         sf_coords = []
+        #where the filtered graph starts and ends in indexes within the full range of data
         startg = int_times.index(f_times[0])
         endg = int_times.index(f_times[-1])
-        #make sure inclusive
-        #[startg - slide_value1:startg] FIX // then add Fs, then add int_times[endg:slidev_value2]
-        sf_times.append(int_times[startg - slide_value1:startg])
-        sf_y1.append(int_y1[startg - slide_value1:startg])
+        end_idx = min(len(int_times), endg + slide_value2 + 1)  # +1 for inclusive end
+
+        # append filtered data
+        sf_times.extend(f_times)
+        sf_y1.extend(f_y1)
         if self.y2_exists:
-            sf_y2.append(int_y2[slide_value1:startg])
-        sf_coords.append(int_coords[slide_value1:startg])
-        #adding Fs
-        sf_times.append(f_times)
-        sf_y1.append(f_y1)
+            sf_y2.extend(f_y2)
+        sf_coords.extend(f_coords)
+
+        # append data after the filtered range
+        sf_times.extend(int_times[endg + 1:end_idx])
+        sf_y1.extend(int_y1[endg + 1:end_idx])
         if self.y2_exists:
-            sf_y2.append(f_y2)
-        sf_coords.append(f_coords)
-        # adding y2s
+            sf_y2.extend(int_y2[endg + 1:end_idx])
+        sf_coords.extend(int_coords[endg + 1:end_idx])
+
+        self.ax.clear()
 
         match self.graph_type:
             case "Line graph":
@@ -481,8 +544,6 @@ def make_interval_minmax_data(self, interval):
             if interval == "Seconds":
                 title = y1label + " and " + y2label + " per " + interval.replace('s','') + " Over a " + str(self.intmin) + "-" + str(self.intmax) + interval.replace('s','') + "Interval"
             else:
-                print(interval)
-                print(type(interval))
                 title = "Average " + y1label + " and " + y2label + " per " + interval.replace('s','')
         else:
             if interval == "Seconds":
