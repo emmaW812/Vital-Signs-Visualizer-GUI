@@ -19,6 +19,7 @@ import threading
 import numpy as np
 import pandas as pd
 import time
+from datetime import datetime
 
 class RealTimeWindow:
     def __init__(self, master, data, x_value, y_values, graph_type):
@@ -47,9 +48,9 @@ class RealTimeWindow:
         self.select_interval.set("Select interval length")
 
         # duration
-        ttk.Label(text="Duration (seconds)").grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
-        duration_entry = ttk.Entry(width=20)
-        duration_entry.grid(row=1, column=1, padx=5, pady=5)
+        ttk.Label(self.new_window, text="Duration (seconds)").pack(pady=5, padx=5)
+        self.duration_entry = ttk.Entry(self.new_window)
+        self.duration_entry.pack(pady=5, padx=5)
 
         self.createbutton = tk.Button(self.new_window, text="Create", command=self.setup_graph)
         self.createbutton.pack(pady=10, padx=10)
@@ -167,12 +168,17 @@ class RealTimeWindow:
         ax.legend()
     
     def update_data(self, sec_len):
-        while not self.stop:
+        self.start_time = time.time()
+        self.time_diff = 0
+        while not self.stop and self.time_diff < self.duration:
+            current = time.time()
+            self.time_diff = current - self.start_time
+            print("starting update data")
             time.sleep(sec_len)
             last_row = self.data.iloc[-1]
 
-            y1_value = last_row[self.y_values[self.y1label]]
-            y2_value = last_row[self.y_values[self.y2label]] if self.y2_exists else None
+            y1_value = last_row[self.y1label]
+            y2_value = last_row[self.y2label] if self.y2_exists else None
             current_coords = last_row['Location']
 
             self.times.append(self.real_time)
@@ -215,13 +221,10 @@ class RealTimeWindow:
         }[self.interval]
         
         self.times, self.y1, self.y2, self.coords = [], [], [], []
-        duration = int(self.duration_entry.get())
+        self.duration = int(self.duration_entry.get())
         #run update data - will run every interval/seclen secs and then will run update graph
         self.update_thread = threading.Thread(target=self.update_data, args=(self.sec_len,))
         self.update_thread.start()
-
-        time.sleep(duration)
-        self.stop = True
 
         stop_button = tk.Button(self.new_window, text="Stop", command=self.stop_update)
         stop_button.pack(side=tk.BOTTOM)
@@ -229,12 +232,13 @@ class RealTimeWindow:
     def update_graph(self):
         self.ax.clear()
         if self.graph_type == "Line graph":
+            print("grpahing line")
             self.create_line_graph(self.ax, self.times, self.y1, self.y2, self.y1label, self.y2label)
         elif self.graph_type == "Bar graph":
             self.create_bar_graph(self.ax, self.times, self.y1, self.y2, self.y1label, self.y2label)
         elif self.graph_type == "Trajectory map":
             self.create_trajectory_map(self.ax, self.times, self.y1, self.y2, self.y1label, self.y2label, self.coords)
-           
+        
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     
