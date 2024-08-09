@@ -69,7 +69,7 @@ y_entries = [y_entry]
 add_button = ttk.Button(frame, text="Add column data (y)", command=add_column_y2)
 add_button.grid(row=2, column=0, padx=5, pady=5)
 
-select_graphs = customtkinter.CTkOptionMenu(frame, values=["Bar graph", "Line graph", "Trajectory map","Probability Histogram"])
+select_graphs = customtkinter.CTkOptionMenu(frame, values=["Bar graph", "Line graph", "Trajectory map","Probability histogram"])
 select_graphs.grid(row=3,column=0,padx=5, pady=5)
 select_graphs.set("Select graph type")
 

@@ -325,6 +325,7 @@ class BatchWindow:
         self.ax.legend()
 
     def create_probability_histogram(self, times, y1, y2, y1label, y2label, interval):
+        print("starting pmh")
         labels_y1 = {
         "10-20": 0,"20-40": 0,"40-60": 0, "60-80": 0, "80-100": 0, "100-120": 0, 
         "120-140": 0, "140-160": 0, "160-180": 0, "180-200": 0
@@ -353,9 +354,13 @@ class BatchWindow:
         
         labels = list(labels_y1.keys())
 
-        self.create_bar_graph(labels, prob_y1, prob_y2, y1label, y2label,interval)
+        if self.y2_exists:
+            self.create_bar_graph(labels, prob_y1, prob_y2, y1label, y2label,interval)
+        else: 
+            self.create_bar_graph(labels, prob_y1, None, y1label, y2label,interval)
 
         #relabelling custom
+        print("labelling pmh")
         self.ax.set_ylabel("Probability mass")
         if self.y2_exists:
             self.ax.set_xlabel(f"Bin ranges ({y1label} and {y2label}, BPMs)")
@@ -398,11 +403,13 @@ class BatchWindow:
         elif self.graph_type == "Probability histogram":
             #interval - will represent prob of  avg of interval durations being within each range from min - max range of time
             self.create_probability_histogram(f_times, f_y1, f_y2, y1label, y2label, self.interval)
+            print("called pms functrion")
         
         self.canvas = FigureCanvasTkAgg(fig, master=self.new_window)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         zoom_factory(self.ax)
+        print("graphed")
 
         if self.min:
             self.entry_box_min.destroy()
@@ -458,16 +465,26 @@ class BatchWindow:
 
         #regraph
         self.ax.clear()
-
-        match self.graph_type:
-            case "Line graph":
-                self.create_line_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
-            case "Bar graph":
-                self.create_bar_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
-            case "Trajectory map":
-                self.create_trajectory_map(sf_times, sf_y1, sf_y2, y1label, y2label, sf_coords)
-            case "Probability histogram":
-                self.create_probability_histogram(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+        if self.y2_exists:
+            match self.graph_type:
+                case "Line graph":
+                    self.create_line_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+                case "Bar graph":
+                    self.create_bar_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+                case "Trajectory map":
+                    self.create_trajectory_map(sf_times, sf_y1, sf_y2, y1label, y2label, sf_coords)
+                case "Probability histogram":
+                    self.create_probability_histogram(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+        else:
+            match self.graph_type:
+                case "Line graph":
+                    self.create_line_graph(sf_times, sf_y1, None, y1label, y2label, self.interval)
+                case "Bar graph":
+                    self.create_bar_graph(sf_times, sf_y1, None, y1label, y2label, self.interval)
+                case "Trajectory map":
+                    self.create_trajectory_map(sf_times, sf_y1, None, y1label, y2label, sf_coords)
+                case "Probability histogram":
+                    self.create_probability_histogram(sf_times, sf_y1, None, y1label, y2label, self.interval)
         self.canvas.draw()
 
     def slide_graph2(self, value, f_times, f_y1, f_y2, f_coords, y1label, y2label, int_times, int_y1, int_y2, int_coords):
@@ -499,16 +516,26 @@ class BatchWindow:
         sf_coords.extend(int_coords[endg + 1:end_idx])
 
         self.ax.clear()
-
-        match self.graph_type:
-            case "Line graph":
-                self.create_line_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
-            case "Bar graph":
-                self.create_bar_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
-            case "Trajectory map":
-                self.create_trajectory_map(sf_times, sf_y1, sf_y2, y1label, y2label, sf_coords)
-            case "Probability histogram":
-                self.create_probability_histogram(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+        if self.y2_exists:
+            match self.graph_type:
+                case "Line graph":
+                    self.create_line_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+                case "Bar graph":
+                    self.create_bar_graph(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+                case "Trajectory map":
+                    self.create_trajectory_map(sf_times, sf_y1, sf_y2, y1label, y2label, sf_coords)
+                case "Probability histogram":
+                    self.create_probability_histogram(sf_times, sf_y1, sf_y2, y1label, y2label, self.interval)
+        else:
+            match self.graph_type:
+                case "Line graph":
+                    self.create_line_graph(sf_times, sf_y1, None, y1label, y2label, self.interval)
+                case "Bar graph":
+                    self.create_bar_graph(sf_times, sf_y1, None, y1label, y2label, self.interval)
+                case "Trajectory map":
+                    self.create_trajectory_map(sf_times, sf_y1, None, y1label, y2label, sf_coords)
+                case "Probability histogram":
+                    self.create_probability_histogram(sf_times, sf_y1, None, y1label, y2label, self.interval)
         self.canvas.draw()
 
     def name_graph(self,interval,y1label,y2label):
